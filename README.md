@@ -1,4 +1,10 @@
-# Visualize changes in class schedules from Zermelo
+# Rowizer - Zermelo Schedule Change Visualization
+
+> **This is an adaptation** of the original Rowizer project created by **Xinne van der Oord** at **Vlietland College**.
+> This fork has been customized for use at a different school group with additional features and customizations.
+> See [the original repository](https://github.com/vlietland-college/Rowizer) for the base version.
+
+## Overview
 
 With the growing call to ban phones from schools an ancient, almost forgotten concept is on the rise again: a method 
 to view today's changes on a screen. This project aims to provide a simple, secure and free way to show relevant 
@@ -19,7 +25,14 @@ Rowizer:
 ![Screenshot of a live Rowizer example](/assets/img/example.png)
 
 ## Try a demo
-[Try a live demo!](https://vlietland-college.github.io/Rowizer?token=ec2h7u9cd612a1gr11q5k1a4ou&portal=j9qeq&date=19-6-2024&branch=a). The data is fetched from my development portal. 
+[Try a live demo!](https://vlietland-college.github.io/Rowizer?token=ec2h7u9cd612a1gr11q5k1a4ou&portal=j9qeq&date=19-6-2024&branch=a). The data is fetched from the original development portal.
+
+## Customizations in this fork
+
+This adaptation includes:
+- **Dynamic gradient backgrounds**: Customize the background gradient colors via URL parameters
+- **Automatic color contrast**: The highlight color for new appointments is automatically computed to contrast well with your chosen background
+- **Enhanced styling**: Improved visual styling for appointments and UI elements 
 
 ## How to use?
 So, you're an BIP or ASP and would like to try Rowizer? It will only take a minute and is completely free! And, since the application runs 100% in-browser, no data is sent to any servers (well, except Zermelo, but we trust them) so no need for any signatures!
@@ -46,9 +59,6 @@ Rowizer will automatically show today. If you want to try another day, use the d
 > [!WARNING]
 > Rowizer is designed for (big) TV screens. The best result is achieved when using a 50 inch or lager 4K screen. 
 
-### Use in production
-You are very welcome to use Rowizer using our Github-pages. Bear in mind that things can change at any moment - we are not responsible for any breaking changes. We recommend creating your own fork and using Github pages. 
-
 
 ## URL Parameters
 |Parameter| Example value              | required           | Description                                                                                                                                                                                                                                                                                                                                                                                |
@@ -60,3 +70,5 @@ You are very welcome to use Rowizer using our Github-pages. Bear in mind that th
 |external| extern                     | | If you the location with this name to an appointment, Rowizer will show the attending teachers just below the absent ones. This way, students will quickly see that a certain teacher is not available at school.                                                                                                                                                                          |
 |departmentsIgnore| kopkl,vavo                 || Some departments should not be taken into consideration while determining if a whole education or yearOfEducation is present in an appointment.                                                                                                                                                                                                                                            |
 |mergeAppointments| false                      | | Before Zermelo 24.07 apoointments that span multiple periods were published as seperate appointments. (See [the release docs](https://support.zermelo.nl/news/posts/release-2407#wat_is_een_publicatieblokn)). If this parameter is omitted or set to anything but 'false', Rowizer automatically merges these appointments based on successive periods and identical teachers and groups. 
+|bgColor1| FF5733                     | | First gradient color for the background (hex color without #). Defaults to #020738
+|bgColor2| 2E86AB                     | | Second gradient color for the background (hex color without #). Defaults to #4e395c. The highlight color for new appointments is automatically computed based on the average of these colors. 
