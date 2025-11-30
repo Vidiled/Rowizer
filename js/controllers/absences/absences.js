@@ -68,10 +68,9 @@ export default class Absences {
 
         valid_absences.forEach(abs=>{
             this.#absences[abs.id] = new AbsenceEntity(abs)
-            if(abs.start > timeslots[0].startDt.getTime()/1000){
-               abs.startSlot = timeslots.find(slot=> abs.start <= slot.startDt.getTime()/1000)
-                //console.log("starts after first hour", abs.startSlot, new Date(abs.start*1000))
-            }
+                if(abs.start > timeslots[0].startDt.getTime()/1000){
+                    abs.startSlot = timeslots.find(slot=> abs.start <= slot.startDt.getTime()/1000)
+                }
             if(abs.end < timeslots.at(-1).endDt.getTime()/1000){
                 let endSlot = timeslots.find((slot, index, slots)=> {
                     let to_return = abs.end <= slot.endDt.getTime()/1000

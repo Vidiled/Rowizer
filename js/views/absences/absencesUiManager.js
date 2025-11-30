@@ -15,7 +15,6 @@ export class AbsencesUiManager {
         let unique_employees = [...new Set(absences.map(abs=>abs.employee).filter((e, i, a) => a.indexOf(e) !== i))]
         if(unique_employees.length){
             //there are duplicates in the absences
-            //console.log(unique_employees)
         }
 
         let absences_ui_items = absences.map(abs => new AbsenceUiRecord(abs))

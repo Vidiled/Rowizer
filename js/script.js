@@ -20,14 +20,7 @@ var zapi = new ZermeloApi({
 
 
 $(document).ready(function () {
-    console.log("loadedsdsdsd")
-    //TODO: remove this
-    //window.pretendLikeIts = 1717452000000/1000;
-
     let params = new URLSearchParams(window.location.search)
-
-    //portal: naam vh portal, token: api-token, branch: branchcode (vestigingscode)
-
     let param_date = params.get("date");
     let param_branch = params.get("branch");
     let param_ignore = params.get("departmentsIgnore");
@@ -103,9 +96,9 @@ $(document).ready(function () {
                 absencesUiManager.refresh();
             }, 5*60*1000)
             document.querySelector("#absences-container").style.display = null
-        }).catch(err=>{
+            }).catch(err=>{
             if(err instanceof ZermeloAuthorizationError){
-                console.log("No authorization for absences")
+                console.warn("No authorization for absences")
 
             }
             else {
@@ -113,7 +106,7 @@ $(document).ready(function () {
             }
         });
 
-        connector.waitUntilReady().then(a=> outofoffice.setExternalLocationName(param_external)).catch(err=>console.log(err))
+        connector.waitUntilReady().then(a=> outofoffice.setExternalLocationName(param_external)).catch(err=>console.error(err))
             .then(a=> outofoffice.loadAll())
             .then(items=>{
                 if(outofoffice.outOfOffices.length){
@@ -141,14 +134,4 @@ $(document).ready(function () {
         month: 'long',
         day: 'numeric'
     }))
-
-
-    /*$( window ).on( "resize", function() {
-        console.log("resize")
-        //also keep in mind the height of the resized window, scrollheigt-height is what we need to scroll
-
-    } );*/
-
-
-    // Your code to run since DOM is loaded and ready
 });

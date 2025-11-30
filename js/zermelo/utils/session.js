@@ -30,7 +30,6 @@ class Session{
         let c_res = await cache.match(req)
         if(c_res) {
             let c_json = await c_res.json()
-            console.log("from cache", c_res, c_json)
         }*/
         try {
             var result =  await fetch(req, req_options)

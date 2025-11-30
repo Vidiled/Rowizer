@@ -15,10 +15,9 @@ function mergeAppointments(appointments, comp_func, before_item_func = (original
             return is_equal
         })
 
-        if(found_set){
+            if(found_set){
 
             found_set.push(appointment)
-            //console.log("equal found for ", appointment, found_set[0])
         }
         else{
             sets.push([appointment])

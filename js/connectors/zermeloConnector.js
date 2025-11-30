@@ -108,7 +108,6 @@ export default class ZermeloConnector extends connector {
             throw new TypeError("Invalid date format must be a valid date.")
         }
         this.#date = date
-        console.log(this.#date.getStartOfDayTime(), this.#date.getEndOfDayTime())
 
         let new_schoolYear =  this.#date.getSchoolYear()
         if(new_schoolYear !== this.#schoolYear){

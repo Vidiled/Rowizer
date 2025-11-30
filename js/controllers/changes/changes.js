@@ -153,7 +153,6 @@ class Changes {
                 let department = this.connector.departments[department_id];
                 let department_groups = department.mainGroupsInDepartment.sort()
                 if(appointment_groups.length === department_groups.length && JSON.stringify(appointment_groups) === JSON.stringify(department_groups)){
-                    //console.log("whole department is added to this appointment")
                     appointment.departmentComplete.push(department_id)
                     if(!years[department.yearOfEducation]){
                         years[department.yearOfEducation] = []

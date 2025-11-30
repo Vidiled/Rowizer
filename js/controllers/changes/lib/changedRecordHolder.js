@@ -40,8 +40,6 @@ export default class ChangedRecordHolder {
                         }
                         else{
                             console.warn("newest is already set")
-                            console.log(rec_obj)
-                            console.log(rec_obj.newest, item)
                         }
                     }
 
@@ -57,8 +55,6 @@ export default class ChangedRecordHolder {
                         }
                         else {
                             console.warn("other old item is set than this")
-                            console.log(rec_obj)
-                            console.log(rec_obj.old, item)
                         }
 
                     }else{
