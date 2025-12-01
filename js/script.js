@@ -29,7 +29,30 @@ $(document).ready(function () {
     param_external = param_external ? param_external : "extern"
 
 
-    let connector = new ZermeloConnector(zapi,param_date ? param_date : undefined, {branch: param_branch? param_branch : undefined, ignore_departments:param_ignore ? param_ignore.split(",") : []})
+    // Support relative date keywords in query param (today/tomorrow & vandaag/morgen)
+    let relativeDateLabel = null;
+    let resolvedParamDate = param_date;
+    if (param_date) {
+        const lower = param_date.toLowerCase();
+        const now = new Date();
+        let target = null;
+        if (lower === "tomorrow" || lower === "morgen") {
+            target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+            relativeDateLabel = "morgen";
+        } else if (lower === "today" || lower === "vandaag") {
+            target = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            relativeDateLabel = "vandaag";
+        }
+        if (target) {
+            const dd = String(target.getDate()).padStart(2, '0');
+            const mm = String(target.getMonth() + 1).padStart(2, '0');
+            const yyyy = target.getFullYear();
+            resolvedParamDate = `${dd}-${mm}-${yyyy}`;
+        }
+    }
+
+
+    let connector = new ZermeloConnector(zapi,resolvedParamDate ? resolvedParamDate : undefined, {branch: param_branch? param_branch : undefined, ignore_departments:param_ignore ? param_ignore.split(",") : []})
     AbsenceEntity.Connector = connector
 
     var changesManager = new Changes(connector, {
@@ -47,15 +70,20 @@ $(document).ready(function () {
     window.cm = changesUiManager
     window.zc = connector
 
-    let dayChanged = function(){
-        changesManager.reset()
-        changesUiManager.refreshTable()
-        $("#title").text("Roosterwijzigingen " + connector.date.toLocaleString("nl-NL", {
+    const setTitle = (dateObj) => {
+        const label = relativeDateLabel ? ` (${relativeDateLabel})` : '';
+        $("#title").text("Roosterwijzigingen" + label + " " + dateObj.toLocaleString("nl-NL", {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         }))
+    }
+
+    let dayChanged = function(){
+        changesManager.reset()
+        changesUiManager.refreshTable()
+        setTitle(connector.date) // Updates the title with the new date in format 'Roosterwijzigingen maandag 1 december 2025'
     }
     window.dc = dayChanged
 
@@ -76,12 +104,7 @@ $(document).ready(function () {
                     last_checked_date = new_date;
                     connector.setDate(new_date_obk).then(a=>{
                         changesManager.reset()
-                        $("#title").text("Roosterwijzigingen " + connector.date.toLocaleString("nl-NL", {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        }))
+                        setTitle(connector.date)
                         absences.reset()
 
                     })
@@ -126,12 +149,5 @@ $(document).ready(function () {
 
 
     })
-
-
-    $("#title").text("Roosterwijzigingen " + changesUiManager.date.toLocaleString("nl-NL", {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    }))
+    setTitle(connector.date)
 });

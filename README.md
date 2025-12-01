@@ -51,9 +51,15 @@ If you have multiple branches, add:
 ```
 &branch={BRANCH_CODE_HERE}
 ```
-Rowizer will automatically show today. If you want to try another day, use the date parameter with DD-MM-YYYY format:
+Rowizer will automatically show today. If you want to try another day, use the `date` parameter with DD-MM-YYYY format, or use the relative keywords `today`/`vandaag` and `tomorrow`/`morgen`:
 ```
 &date=19-6-2024
+```
+or
+```
+&date=tomorrow
+```
+The page title will indicate this with “(vandaag)” or “(morgen)”.
 ```
 
 > [!WARNING]
@@ -66,7 +72,7 @@ Rowizer will automatically show today. If you want to try another day, use the d
 |portal| j9qeq                      | x                  | The zportal ID (so the part before .zportal.nl                                                                                                                                                                                                                                                                                                                                             |
 |token| ec2h7u9cd612a1gr11q5k1a4ou | x                  | The API-token [generated](https://support.zermelo.nl/guides/applicatiebeheerder/koppelingen/overige-koppelingen-2/koppeling-met-overige-externe-partijen) in your Zermelo portal                                                                                                                                                                                                           |
 |branch| a                          | if multiple branches | The branch code (vestigingscode) found in Portal inrichting -> Vestigingen                                                                                                                                                                                                                                                                                                                 |
-|date| 22-03-2024                 | | To test Rowizer you can use a different date                                                                                                                                                                                                                                                                                                                                               |
+|date| 22-03-2024                 | | Use a specific date (DD-MM-YYYY) or the relative keywords `today`/`vandaag` and `tomorrow`/`morgen`. The title will show “(vandaag)” or “(morgen)” when these are used.                                                                                                                                                                                                                    |
 |external| extern                     | | If you the location with this name to an appointment, Rowizer will show the attending teachers just below the absent ones. This way, students will quickly see that a certain teacher is not available at school.                                                                                                                                                                          |
 |departmentsIgnore| kopkl,vavo                 || Some departments should not be taken into consideration while determining if a whole education or yearOfEducation is present in an appointment.                                                                                                                                                                                                                                            |
 |mergeAppointments| false                      | | Before Zermelo 24.07 apoointments that span multiple periods were published as seperate appointments. (See [the release docs](https://support.zermelo.nl/news/posts/release-2407#wat_is_een_publicatieblokn)). If this parameter is omitted or set to anything but 'false', Rowizer automatically merges these appointments based on successive periods and identical teachers and groups. 
