@@ -28,6 +28,12 @@ $(document).ready(function () {
     let param_external = params.get("external")
     param_external = param_external ? param_external : "extern"
 
+    // Optional features flags (default enabled unless set to 'false')
+    const param_absences = params.get("absences");
+    const enableAbsences = !(param_absences && param_absences.toLowerCase() === "false");
+    const param_outofoffice = params.get("outofoffice");
+    const enableOutOfOffice = !(param_outofoffice && param_outofoffice.toLowerCase() === "false");
+
 
     // Support relative date keywords in query param (today/tomorrow & vandaag/morgen)
     let relativeDateLabel = null;
@@ -60,12 +66,24 @@ $(document).ready(function () {
     });
     var changesUiManager = new ChangesUiManager(document.querySelector("#content-container"), connector, changesManager)
 
-    var absences = new Absences(connector)
-    var absencesUiManager = new AbsencesUiManager(document.querySelector("#absences-container>div"),connector,absences);
+    let absences, absencesUiManager;
+    if (enableAbsences) {
+        absences = new Absences(connector)
+        absencesUiManager = new AbsencesUiManager(document.querySelector("#absences-container>div"),connector,absences);
+    } else {
+        const absencesContainer = document.querySelector("#absences-container");
+        if (absencesContainer) absencesContainer.style.display = "none";
+    }
 
 
-    var outofoffice = new OutOfOffice(connector)
-    var outOfOfficeUiManager = new OutOfOfficeUiManager(document.querySelector("#outofoffice-inner-container"),connector,outofoffice)
+    let outofoffice, outOfOfficeUiManager;
+    if (enableOutOfOffice) {
+        outofoffice = new OutOfOffice(connector)
+        outOfOfficeUiManager = new OutOfOfficeUiManager(document.querySelector("#outofoffice-inner-container"),connector,outofoffice)
+    } else {
+        const oooContainer = document.querySelector("#outofoffice-container");
+        if (oooContainer) oooContainer.style.display = "none";
+    }
 
     window.cm = changesUiManager
     window.zc = connector
@@ -114,38 +132,45 @@ $(document).ready(function () {
 
             }, 5*60*1000)
         })
-        absencesUiManager.refresh().then(a=>{
-            setInterval(()=>{
-                absencesUiManager.refresh();
-            }, 5*60*1000)
-            document.querySelector("#absences-container").style.display = null
-            }).catch(err=>{
-            if(err instanceof ZermeloAuthorizationError){
-                console.warn("No authorization for absences")
-
-            }
-            else {
-                throw err
-            }
-        });
-
-        connector.waitUntilReady().then(a=> outofoffice.setExternalLocationName(param_external)).catch(err=>console.error(err))
-            .then(a=> outofoffice.loadAll())
-            .then(items=>{
-                if(outofoffice.outOfOffices.length){
-                    document.querySelector("#outofoffice-container").style.display = null
-                }
-                outOfOfficeUiManager.refresh()
+        if (enableAbsences && absencesUiManager) {
+            absencesUiManager.refresh().then(a=>{
                 setInterval(()=>{
-                    outOfOfficeUiManager.refresh();
-                    if(outofoffice.outOfOffices.length){
-                        document.querySelector("#outofoffice-container").style.display = null
-                    }
-                    else{
-                        document.querySelector("#outofoffice-container").style.display = "none"
-                    }
+                    absencesUiManager.refresh();
                 }, 5*60*1000)
-            })
+                const absencesContainer = document.querySelector("#absences-container");
+                if (absencesContainer) absencesContainer.style.display = null
+                }).catch(err=>{
+                if(err instanceof ZermeloAuthorizationError){
+                    console.warn("No authorization for absences")
+
+                }
+                else {
+                    throw err
+                }
+            });
+        }
+
+        if (enableOutOfOffice && outofoffice && outOfOfficeUiManager) {
+            connector.waitUntilReady().then(a=> outofoffice.setExternalLocationName(param_external)).catch(err=>console.error(err))
+                .then(a=> outofoffice.loadAll())
+                .then(items=>{
+                    if(outofoffice.outOfOffices.length){
+                        const oooContainer = document.querySelector("#outofoffice-container");
+                        if (oooContainer) oooContainer.style.display = null
+                    }
+                    outOfOfficeUiManager.refresh()
+                    setInterval(()=>{
+                        outOfOfficeUiManager.refresh();
+                        const oooContainer = document.querySelector("#outofoffice-container");
+                        if(outofoffice.outOfOffices.length){
+                            if (oooContainer) oooContainer.style.display = null
+                        }
+                        else{
+                            if (oooContainer) oooContainer.style.display = "none"
+                        }
+                    }, 5*60*1000)
+                })
+        }
 
 
     })

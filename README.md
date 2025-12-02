@@ -78,3 +78,5 @@ The page title will indicate this with “(vandaag)” or “(morgen)”.
 |mergeAppointments| false                      | | Before Zermelo 24.07 apoointments that span multiple periods were published as seperate appointments. (See [the release docs](https://support.zermelo.nl/news/posts/release-2407#wat_is_een_publicatieblokn)). If this parameter is omitted or set to anything but 'false', Rowizer automatically merges these appointments based on successive periods and identical teachers and groups. 
 |bgColor1| FF5733                     | | First gradient color for the background (hex color without #). Defaults to #020738
 |bgColor2| 2E86AB                     | | Second gradient color for the background (hex color without #). Defaults to #4e395c. The highlight color for new appointments is automatically computed based on the average of these colors. 
+|absences| false                       | | Set to `false` to hide the Absences (Afwezig) line. Defaults to enabled. |
+|outofoffice| false                    | | Set to `false` to hide the Extern (Out-of-office) line. Defaults to enabled. |
