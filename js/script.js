@@ -28,6 +28,19 @@ $(document).ready(function () {
     let param_external = params.get("external")
     param_external = param_external ? param_external : "extern"
 
+    // Highlight mode: 'new' (default), 'cancelled', 'both', or 'false' to disable
+    const param_highlight = params.get("highlight");
+    let highlightMode = "new";
+    if (param_highlight) {
+        const lower = param_highlight.toLowerCase();
+        if (["false", "none", "off"].includes(lower)) {
+            highlightMode = "none";
+        } else if (["new", "cancelled", "both"].includes(lower)) {
+            highlightMode = lower;
+        }
+    }
+    window.highlightMode = highlightMode;
+
     // Optional features flags (default enabled unless set to 'false')
     const param_absences = params.get("absences");
     const enableAbsences = !(param_absences && param_absences.toLowerCase() === "false");

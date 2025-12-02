@@ -23,9 +23,12 @@ export class ChangesUIRecord {
         el.classList.add("appointment", this.appointment.type)
         let this_morning = new Date(this.appointment.start * 1000)
         this_morning.setHours(8, 0, 0)
-
-        if (this_morning.getTime() < (this.appointment.lastModified * 1000)) {
-            el.classList.add("new")
+        const mode = (window && window.highlightMode) ? window.highlightMode : 'new';
+        const isNew = this_morning.getTime() < (this.appointment.lastModified * 1000);
+        const isCancelled = !!this.appointment.cancelled;
+        const shouldHighlight = mode !== 'none' && ((mode === 'new' && isNew) || (mode === 'cancelled' && isCancelled) || (mode === 'both' && (isNew && isCancelled)));
+        if (shouldHighlight) {
+            el.classList.add("highlight")
         }
 
 
