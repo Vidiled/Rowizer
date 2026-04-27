@@ -20,6 +20,9 @@ export class ChangesUiManager {
         let yearsOfEducation = Object.keys(this.connector.yearsOfEducation).sort()
         let timeslots = Object.values(this.connector.timeslots).sort((a, b) => a.rank - b.rank)
 
+        // Filter out U11 (rank 11) timeslot for display
+        timeslots = timeslots.filter(slot => slot.rank !== 11);
+
         let container = document.createElement('div')
         container.classList.add("schedule-container", "schedule-flex")
         container.style.setProperty('--years-of-education', yearsOfEducation.at(-1));
@@ -50,7 +53,8 @@ export class ChangesUiManager {
             el.classList.add("year-row", "schedule-flex")
             let year_cell = document.createElement('div')
             year_cell.classList.add("schedule-flex", "header", "year-header")
-            year_cell.innerHTML = year
+            // Change year display to show "lj 1", "lj 2", etc.
+            year_cell.innerHTML = `lj ${year}`
             el.append(year_cell)
 
             let content_cell = document.createElement('div')

@@ -141,6 +141,14 @@ div.appointment.highlight{
     font-weight: 600;
 }
 
+/* Cancelled appointments styling */
+div.appointment.cancelled {
+    background-color: rgba(255, 0, 0, 0.2) !important;
+    border: 1.5px solid red !important;
+    box-shadow: inset 0 0 5px rgba(255, 0, 0, 0.5),
+                0 0 8px rgba(255, 0, 0, 0.4) !important;
+}
+
 /**afwezigen**/
 
 .absence:not(:last-child)::after {
@@ -176,5 +184,3 @@ div.appointment.highlight{
 #outofoffice-container  * {
     display: inline;
 }
-
-

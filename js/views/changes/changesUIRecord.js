@@ -21,6 +21,12 @@ export class ChangesUIRecord {
     #createElement() {
         let el = document.createElement("div");
         el.classList.add("appointment", this.appointment.type)
+        
+        // Add cancelled class for cancelled appointments
+        if (this.appointment.cancelled) {
+            el.classList.add("cancelled");
+        }
+
         let this_morning = new Date(this.appointment.start * 1000)
         this_morning.setHours(8, 0, 0)
         const mode = (window && window.highlightMode) ? window.highlightMode : 'new';
