@@ -60,11 +60,6 @@ or
 &date=tomorrow
 ```
 The page title will indicate this with “(vandaag)” or “(morgen)”.
-```
-
-> [!WARNING]
-> Rowizer is designed for (big) TV screens. The best result is achieved when using a 50 inch or lager 4K screen. 
-
 
 ## URL Parameters
 |Parameter| Example value              | required           | Description                                                                                                                                                                                                                                                                                                                                                                                |
