@@ -149,6 +149,11 @@ div.appointment.cancelled {
                 0 0 8px rgba(255, 0, 0, 0.4) !important;
 }
 
+/* Replaced lesson: keep the normal card style, only strike the old subject */
+.replacement-old-subject {
+    text-decoration: line-through;
+}
+
 /**afwezigen**/
 
 .absence:not(:last-child)::after {

@@ -71,50 +71,161 @@ export class ChangesUiManager {
     }
 
     fillTable() {
-        let changes = []
-        let app_filtered = Object.values(this.changesManager.appointments).filter(app => app.groupsInDepartments.length)
+        const changes = []
+        const appointments = Object.values(this.changesManager.appointments)
+            .filter(app => app.groupsInDepartments && app.groupsInDepartments.length)
 
+        // Activities take precedence over lessons in the same cell.
+        const activityCoverage = new Set()
+        const coverageKey = (group_id, period) => group_id + ":" + period
 
-
-
-        let do_app = function (apps, cm) {
+        const addActivities = (apps) => {
             apps.forEach(appointment => {
                 appointment.groupsInDepartments.forEach(group_id => {
-                    let group = cm.connector.getGroupInDepartment(group_id)
-                    let branch = cm.connector.getDepartmentOfBranch(group.departmentOfBranch)
-                    let i = appointment.startTimeSlot
+                    const group = this.connector.getGroupInDepartment(group_id)
+                    const department = this.connector.getDepartmentOfBranch(group.departmentOfBranch)
 
-
-
-                    if(appointment.type === "activity"){
-                        if (appointment.cancelled && changes.find(c => c.entity.id === group.id && c.period_start <= appointment.startTimeSlot && c.period_end >= appointment.endTimeSlot)){
-                            return;
+                    let fullyCovered = true
+                    for (let period = appointment.startTimeSlot; period <= appointment.endTimeSlot; period++) {
+                        if (!activityCoverage.has(coverageKey(group_id, period))) {
+                            fullyCovered = false
+                            break
                         }
-                        changes.push(new ChangesUIRecordClass(group, branch, appointment.startTimeSlot, appointment.endTimeSlot, appointment))
-
                     }
-                    else {
-                        while (i <= appointment.endTimeSlot) {
-                            //filteren van dingen die tegelijk met activiteiten uitvallen
-                            if (changes.find(c => c.entity.id === group.id && c.period_start <= i && c.period_end >= i)) {
-                                return;
-                            }
+                    if (fullyCovered) {
+                        return
+                    }
 
-                            changes.push(new ChangesUIRecordClass(group, branch, i, i, appointment))
-                            i++;
-                        }
+                    changes.push(new ChangesUIRecordClass(group, department, appointment.startTimeSlot, appointment.endTimeSlot, appointment))
+                    for (let period = appointment.startTimeSlot; period <= appointment.endTimeSlot; period++) {
+                        activityCoverage.add(coverageKey(group_id, period))
                     }
                 })
             })
-
         }
-        do_app(app_filtered.filter(app => app.type === 'activity' && app.valid && !app.cancelled), this)
-        do_app(app_filtered.filter(app => app.type === 'activity' && app.valid && app.cancelled), this)
 
-        do_app(app_filtered.filter(app => app.type === 'lesson' && app.valid && !app.cancelled), this)
-        do_app(app_filtered.filter(app => app.type === 'lesson' && app.valid && app.cancelled), this)
+        addActivities(appointments.filter(app => app.type === 'activity' && app.valid && !app.cancelled))
+        addActivities(appointments.filter(app => app.type === 'activity' && app.valid && app.cancelled))
 
-        do_app(app_filtered.filter(app => app.type === "lesson" && !app.valid), this)
+        // Group lesson versions by group + period so a cancellation and the
+        // lesson that replaces it can be shown as one card.
+        const buckets = new Map()
+        const addLessons = (apps, kind) => {
+            apps.forEach(appointment => {
+                appointment.groupsInDepartments.forEach(group_id => {
+                    const group = this.connector.getGroupInDepartment(group_id)
+                    const department = this.connector.getDepartmentOfBranch(group.departmentOfBranch)
+
+                    for (let period = appointment.startTimeSlot; period <= appointment.endTimeSlot; period++) {
+                        if (activityCoverage.has(coverageKey(group_id, period))) {
+                            continue
+                        }
+
+                        const key = coverageKey(group_id, period)
+                        let bucket = buckets.get(key)
+                        if (!bucket) {
+                            bucket = {group, department, period, current: [], cancelled: [], invalid: []}
+                            buckets.set(key, bucket)
+                        }
+                        bucket[kind].push(appointment)
+                    }
+                })
+            })
+        }
+
+        addLessons(appointments.filter(app => app.type === 'lesson' && app.valid && !app.cancelled), 'current')
+        addLessons(appointments.filter(app => app.type === 'lesson' && app.valid && app.cancelled), 'cancelled')
+        addLessons(appointments.filter(app => app.type === 'lesson' && !app.valid), 'invalid')
+
+        const items = []
+        buckets.forEach(bucket => {
+            const current = bucket.current[0]
+            const cancelled = bucket.cancelled[0]
+
+            if (current) {
+                // Same group and period: the new lesson replaces the old one.
+                const replaced = cancelled ? {appointment: cancelled, entity: bucket.group} : null
+                items.push({bucket, current, replaced})
+            } else if (cancelled) {
+                items.push({bucket, cancelled})
+            }
+        })
+
+        // Sometimes Zermelo keeps the old version of the same appointment
+        // instance instead of a separate cancellation. The group can change
+        // too (a2a.en -> a2a.fa), so look this up across buckets.
+        const invalidVersions = []
+        const seenInvalid = new Set()
+        buckets.forEach(bucket => {
+            bucket.invalid.forEach(appointment => {
+                if (seenInvalid.has(appointment.id)) {
+                    return
+                }
+                seenInvalid.add(appointment.id)
+                invalidVersions.push({appointment, entity: bucket.group})
+            })
+        })
+        invalidVersions.sort((a, b) => (b.appointment.lastModified || 0) - (a.appointment.lastModified || 0))
+
+        items.filter(item => item.current && !item.replaced).forEach(item => {
+            const oldVersion = invalidVersions.find(version =>
+                version.appointment.appointmentInstance === item.current.appointmentInstance &&
+                this.#isDifferentLesson(version.appointment, item.current)
+            )
+            if (oldVersion) {
+                item.replaced = oldVersion
+            }
+        })
+
+        // A language switch can move students to a different cluster group,
+        // e.g. a2a.en -> a2a.fa. Those share the same student list, so pair
+        // them when there is exactly one candidate in the same period.
+        const currentItems = items.filter(item => item.current)
+        items.filter(item => item.cancelled).forEach(cancelItem => {
+            const candidates = currentItems.filter(item => {
+                if (item.replaced ||
+                    item.bucket.period !== cancelItem.bucket.period ||
+                    item.bucket.department.id !== cancelItem.bucket.department.id) {
+                    return false
+                }
+
+                if (this.#sameArray(item.current.students, cancelItem.cancelled.students)) {
+                    return true
+                }
+
+                // Fallback when student lists are not available.
+                return !item.current.students?.length &&
+                    !cancelItem.cancelled.students?.length &&
+                    this.#classPrefix(item.bucket.group) &&
+                    this.#classPrefix(item.bucket.group) === this.#classPrefix(cancelItem.bucket.group)
+            })
+
+            if (candidates.length === 1) {
+                candidates[0].replaced = {appointment: cancelItem.cancelled, entity: cancelItem.bucket.group}
+                cancelItem.consumed = true
+            }
+        })
+
+        items.forEach(item => {
+            if (item.current) {
+                changes.push(new ChangesUIRecordClass(
+                    item.bucket.group,
+                    item.bucket.department,
+                    item.bucket.period,
+                    item.bucket.period,
+                    item.current,
+                    item.replaced
+                ))
+            } else if (item.cancelled && !item.consumed) {
+                changes.push(new ChangesUIRecordClass(
+                    item.bucket.group,
+                    item.bucket.department,
+                    item.bucket.period,
+                    item.bucket.period,
+                    item.cancelled
+                ))
+            }
+        })
 
         changes.sort((a, b) => {
             if (a.appointment.type !== b.appointment.type) {
@@ -137,6 +248,27 @@ export class ChangesUiManager {
             container.append(change.getElement())
 
         })
+    }
+
+    #isDifferentLesson(a, b) {
+        const subjectsA = (a.subjects || []).slice().sort()
+        const subjectsB = (b.subjects || []).slice().sort()
+        const groupsA = (a.groups || []).slice().sort()
+        const groupsB = (b.groups || []).slice().sort()
+
+        return JSON.stringify(subjectsA) !== JSON.stringify(subjectsB) ||
+            JSON.stringify(groupsA) !== JSON.stringify(groupsB)
+    }
+
+    #classPrefix(entity) {
+        const name = entity.name || entity.extendedName || ""
+        return name.split(/[.\s_-]/)[0].toLowerCase() || null
+    }
+
+    #sameArray(a, b) {
+        const listA = (a || []).slice().sort()
+        const listB = (b || []).slice().sort()
+        return listA.length > 0 && JSON.stringify(listA) === JSON.stringify(listB)
     }
 
     async refreshTable() {

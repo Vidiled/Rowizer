@@ -27,11 +27,15 @@ export class ChangesUIRecord {
             el.classList.add("cancelled");
         }
 
+        if (this.replaced) {
+            el.classList.add("replacement");
+        }
+
         let this_morning = new Date(this.appointment.start * 1000)
         this_morning.setHours(8, 0, 0)
         const mode = (window && window.highlightMode) ? window.highlightMode : 'new';
         const isNew = this_morning.getTime() < (this.appointment.lastModified * 1000);
-        const isCancelled = !!this.appointment.cancelled;
+        const isCancelled = !!this.appointment.cancelled || !!this.replaced?.appointment?.cancelled;
         const shouldHighlight = mode !== 'none' && ((mode === 'new' && isNew) || (mode === 'cancelled' && isCancelled) || (mode === 'both' && (isNew && isCancelled)));
         if (shouldHighlight) {
             el.classList.add("highlight")
@@ -45,10 +49,14 @@ export class ChangesUIRecord {
             el.classList.add('invalid');
         }
         el.setAttribute('data-appointment-id', this.appointment.id);
-        el.innerText = this.getInnerText()
+        this.renderContent(el)
 
         this.element = el
         return this.element
+    }
+
+    renderContent(el) {
+        el.innerText = this.getInnerText()
     }
 
     getInnerText() {

@@ -43,8 +43,10 @@ class Changes {
                 options: {type: 'activity'},
                 lastModified: 0
             },
-            "modified": {
-                options: {modified: true},
+            // `modified` is deprecated in the Zermelo API. `changed` is the
+            // supported filter for appointments with changes.
+            "changed": {
+                options: {changed: true},
                 lastModified: 0
             },
             "cancelled": {
@@ -92,7 +94,27 @@ class Changes {
             category_promises[category_name] = this.connector.api.appointments.get({...common_data, ...this.#appointmentCategories[category_name].options, ...{modifiedSince: this.#appointmentCategories[category_name].lastModified}})
         }, this)
 
-        let nameless_results = await Promise.all(Object.values(category_promises))
+        // Zermelo can create a replacement lesson without marking it as
+        // changed or new: it is copied as a "base" appointment. Fetch the
+        // current timetable as a reference so those replacements can be found.
+        let schedule_promise = this.connector.api.appointments.get({...common_data, valid: true})
+
+        // A single optional category must not prevent the rest of the changes
+        // from loading.
+        let [nameless_results, schedule] = await Promise.all([
+            Promise.all(
+                Object.entries(category_promises).map(([name, promise]) =>
+                    promise.catch(error => {
+                        console.warn("Could not load " + name + " appointments", error)
+                        return []
+                    })
+                )
+            ),
+            schedule_promise.catch(error => {
+                console.warn("Could not load the current timetable", error)
+                return []
+            })
+        ])
         let category_results ={}
         categories_names.forEach((name, index) =>{
             category_results[name] = nameless_results[index]
@@ -115,7 +137,11 @@ class Changes {
         if(this.#mergeMultipleHourSpan){
             modified_appointments =  mergeSubsequentAppointments(Object.values(modified_appointments))
             //this.#combineSpansMultipleHours(modified_appointments)
+        } else {
+            modified_appointments = Object.values(modified_appointments)
         }
+
+        modified_appointments = this.#addReplacementLessons(modified_appointments, schedule)
 
         modified_appointments.forEach(appointment=>{
             //bepalen of er hele afdelingen en/of jaarlagen in zitten
@@ -187,11 +213,98 @@ class Changes {
 
         })
 
-        let modified_objects_object = {}
-        modified_appointments.forEach(app => modified_objects_object[app.id] = app)
+        // Keep previously loaded changes in the replacement lookup. A
+        // cancellation may already have been shown before the full timetable
+        // was available.
+        const existingIds = new Set(Object.keys(this.#appointments))
+        const all_appointments = {}
+        Object.values(this.#appointments).forEach(app => all_appointments[app.id] = app)
+        modified_appointments.forEach(app => all_appointments[app.id] = app)
 
-        Object.assign(this.#appointments, modified_objects_object)
-        return modified_appointments
+        let all_with_replacements = this.#addReplacementLessons(Object.values(all_appointments), schedule)
+        if (this.#mergeMultipleHourSpan) {
+            all_with_replacements = mergeSubsequentAppointments(all_with_replacements)
+        }
+
+        const all_objects = {}
+        all_with_replacements.forEach(app => all_objects[app.id] = app)
+
+        Object.keys(this.#appointments).forEach(id => delete this.#appointments[id])
+        Object.assign(this.#appointments, all_objects)
+
+        const updatedIds = new Set(modified_appointments.map(app => String(app.id)))
+        const addedReplacements = all_with_replacements.filter(app =>
+            !existingIds.has(String(app.id)) && !updatedIds.has(String(app.id))
+        )
+
+        return [...modified_appointments, ...addedReplacements]
+    }
+
+    #addReplacementLessons(changes, schedule) {
+        const cancelled = changes.filter(app =>
+            app.type === 'lesson' && app.valid && app.cancelled
+        )
+        if (!cancelled.length) {
+            return changes
+        }
+
+        const current = schedule.filter(app =>
+            app.type === 'lesson' && app.valid && !app.cancelled
+        )
+        const existingIds = new Set(changes.map(app => app.id))
+
+        cancelled.forEach(oldAppointment => {
+            current.forEach(newAppointment => {
+                if (existingIds.has(newAppointment.id)) {
+                    return
+                }
+                if (!this.#isReplacementCandidate(oldAppointment, newAppointment)) {
+                    return
+                }
+
+                changes.push(newAppointment)
+                existingIds.add(newAppointment.id)
+            })
+        })
+
+        return changes
+    }
+
+    #isReplacementCandidate(oldAppointment, newAppointment) {
+        if (!this.#periodsOverlap(oldAppointment, newAppointment)) {
+            return false
+        }
+
+        // Same group and period: a group cannot follow two lessons at once,
+        // so this is the replacement for the cancelled lesson.
+        if (this.#sameArray(oldAppointment.groupsInDepartments, newAppointment.groupsInDepartments)) {
+            return true
+        }
+
+        // Cluster switch, e.g. a2a.en -> a2a.fa: the group id changes but the
+        // students stay the same.
+        return this.#sameArray(oldAppointment.students, newAppointment.students) &&
+            this.#isDifferentLesson(oldAppointment, newAppointment)
+    }
+
+    #periodsOverlap(a, b) {
+        return a.startTimeSlot <= b.endTimeSlot && b.startTimeSlot <= a.endTimeSlot
+    }
+
+    #sameArray(a, b) {
+        const listA = (a || []).slice().sort()
+        const listB = (b || []).slice().sort()
+        return listA.length > 0 && JSON.stringify(listA) === JSON.stringify(listB)
+    }
+
+    #isDifferentLesson(a, b) {
+        const subjectsA = (a.subjects || []).slice().sort()
+        const subjectsB = (b.subjects || []).slice().sort()
+        const groupsA = (a.groups || []).slice().sort()
+        const groupsB = (b.groups || []).slice().sort()
+
+        return JSON.stringify(subjectsA) !== JSON.stringify(subjectsB) ||
+            JSON.stringify(groupsA) !== JSON.stringify(groupsB)
     }
 
 }

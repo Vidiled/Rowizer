@@ -12,6 +12,7 @@ information on screens.
 
 Rowizer: 
 - Determines the actual impact the changes have on the schedule: only relevant information[^1] is shown - no endless lists of changes. 
+- Shows replacement lessons as one card: the cancelled lesson is struck through, followed by the new subject, teacher and room.
 - Highlights new changes (made after 8AM)
 - Always shows activities in green 
 - Automatically fetches new changes from Zermelo
